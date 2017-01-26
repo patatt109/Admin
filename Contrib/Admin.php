@@ -26,6 +26,7 @@ use Phact\Helpers\Text;
 use Phact\Main\Phact;
 use Phact\Orm\Expression;
 use Phact\Orm\Fields\Field;
+use Phact\Orm\Fields\PositionField;
 use Phact\Orm\Model;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
@@ -43,8 +44,6 @@ abstract class Admin
      */
     protected $_instance;
 
-    public static $public = true;
-
     public $allTemplate = 'admin/all.tpl';
 
     public $listItemActionsTemplate = 'admin/list/_item_actions.tpl';
@@ -58,13 +57,14 @@ abstract class Admin
     public $pageSizes = [20, 50, 100];
 
     /**
-     * Sorting column
-     *
-     * @var null|string
+     * @var bool
      */
-    public $sort = null;
-
     public $autoFixSort = true;
+
+    /**
+     * @var string|null
+     */
+    protected $_sortColumn;
 
     /**
      * Parent id for TreeModel
@@ -83,8 +83,38 @@ abstract class Admin
      * Owner attribute for RelatedAdmins
      * @var null
      */
-    public $ownerAttribute = null;
+    public static $ownerAttribute = null;
 
+    /**
+     * Sort attribute/column
+     */
+    public function getSortColumn()
+    {
+        if (is_null($this->_sortColumn)) {
+            $model = $this->getModel();
+            $fields = $model->getFields();
+            $this->_sortColumn = false;
+            foreach ($fields as $name => $config) {
+                $class = null;
+                if (is_string($config)) {
+                    $class = $config;
+                } elseif (is_array($config) && isset($config['class'])) {
+                    $class = $config['class'];
+                }
+                if (is_a($class, PositionField::class, true)) {
+                    $this->_sortColumn = $name;
+                }
+            }
+        }
+        return $this->_sortColumn;
+    }
+    /**
+     * @return bool
+     */
+    public static function getIsPublic()
+    {
+        return !static::$ownerAttribute;
+    }
     /**
      * Get current object
      *
@@ -140,8 +170,8 @@ abstract class Admin
             $columns[] = 'root';
             $columns[] = 'depth';
         }
-        if ($this->ownerAttribute) {
-            $columns[] = $this->ownerAttribute;
+        if ($this::$ownerAttribute) {
+            $columns[] = $this::$ownerAttribute;
         }
         return $columns;
     }
@@ -434,9 +464,9 @@ abstract class Admin
                 return $model->objects()->roots();
             }
         }
-        if ($this->ownerAttribute && $this->ownerPk) {
+        if ($this::$ownerAttribute && $this->ownerPk) {
             return $model->objects()->filter([
-                $this->ownerAttribute => $this->ownerPk
+                $this::$ownerAttribute => $this->ownerPk
             ]);
         }
         return $model->objects()->getQuerySet();
@@ -495,9 +525,9 @@ abstract class Admin
             $qs->setOrder([
                 $order['raw']
             ]);
-        } else if ($this->sort) {
+        } else if ($sort = $this->getSortColumn()) {
             $qs->setOrder([
-                $this->sort
+                $sort
             ]);
         }
         return $qs;
@@ -509,9 +539,9 @@ abstract class Admin
      */
     public function fixSort($qs)
     {
-        if ($this->sort && $this->autoFixSort && $this->getCanSort($qs)) {
+        if (($sort = $this->getSortColumn()) && $this->autoFixSort && $this->getCanSort($qs)) {
             $newQs = clone($qs);
-            $raw = $newQs->group([$this->sort])->having(new Expression('c > 1'))->values([$this->sort, new Expression('count(*) as c')]);
+            $raw = $newQs->group([$sort])->having(new Expression('c > 1'))->values([$sort, new Expression('count(*) as c')]);
             if ($raw) {
                 $newQs = clone($qs);
                 $qLayer = $newQs->getQueryLayer();
@@ -521,8 +551,8 @@ abstract class Admin
                 $model = $this->getModel();
                 $pk = $model->getPkAttribute();
 
-                $newQs->order([$this->sort, $pk])->update([
-                    $this->sort => new Expression("@position := (@position + 1)")
+                $newQs->order([$sort, $pk])->update([
+                    $sort => new Expression("@position := (@position + 1)")
                 ]);
             }
         }
@@ -614,7 +644,7 @@ abstract class Admin
 
     public function getSortUrl($parentId = null)
     {
-        if ($this->sort || $this->getIsTree()) {
+        if (($sort = $this->getSortColumn()) || $this->getIsTree()) {
             $route = 'admin:sort';
             $params = [
                 'module' => static::getModuleName(),
@@ -742,8 +772,8 @@ abstract class Admin
             $form = $this->getUpdateForm();
         }
 
-        if ($this->ownerAttribute) {
-            $form->exclude[] = $this->ownerAttribute;
+        if ($this::$ownerAttribute) {
+            $form->exclude[] = $this::$ownerAttribute;
         }
         $this->setInstance($model);
         if ($this->getIsTree() && $parentId) {
@@ -757,8 +787,8 @@ abstract class Admin
 
         if ($request->getIsPost() && $form->fill($_POST, $_FILES)) {
             $safeAttributes = [];
-            if ($this->ownerAttribute && $this->ownerPk) {
-                $safeAttributes[$this->ownerAttribute] = $this->ownerPk;
+            if ($this::$ownerAttribute && $this->ownerPk) {
+                $safeAttributes[$this::$ownerAttribute] = $this->ownerPk;
             }
             if ($form->valid && $form->save($safeAttributes)) {
                 if ($request->getIsAjax()) {
@@ -799,9 +829,9 @@ abstract class Admin
      */
     public function getCanSort($qs)
     {
-        if ($this->sort) {
+        if ($sort = $this->getSortColumn()) {
             $order = $qs->getOrder();
-            return $order == [$this->sort];
+            return $order == [$sort];
         } else {
             return false;
         }
@@ -838,7 +868,7 @@ abstract class Admin
                 }
             }
         } else {
-            $sortColumn = $this->sort;
+            $sortColumn = $this->getSortColumn();
             $positions = $this->getQuerySet()->filter(['pk__in' => $pkList])->values([$sortColumn], true);
             asort($positions);
             $result = array_combine($pkList, $positions);

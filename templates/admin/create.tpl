@@ -29,7 +29,7 @@
 
                 <div class="links">
                     {if $model->pk && $.php.method_exists($model, 'getAbsoluteUrl')}
-                        <a href="{$model->getAbsoluteUrl()}">
+                        <a href="{$model->getAbsoluteUrl()}" target="_blank">
                             <i class="icon-watch_on_site"></i>
                             <span class="text">
                                 Посмотреть на сайте

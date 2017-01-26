@@ -1,4 +1,4 @@
-{if !$admin->sort && $config['order']}
+{if !$admin->getSortColumn() && $config['order']}
     {var $active = false}
     {var $newOrder = $config['order']}
     {var $desc = false}

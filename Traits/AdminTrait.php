@@ -33,7 +33,7 @@ trait AdminTrait
         $menu = [];
         $adminClasses = static::getAdminClasses();
         foreach ($adminClasses as $adminClass) {
-            if (is_a($adminClass, Admin::class, true) && $adminClass::$public) {
+            if (is_a($adminClass, Admin::class, true) && $adminClass::getIsPublic()) {
                 $menu[] = [
                     'adminClassName' => $adminClass::className(),
                     'adminClassNameShort' => $adminClass::classNameShort(),

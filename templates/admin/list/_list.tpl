@@ -46,7 +46,7 @@
                             </th>
                         {/if}
 
-                        {if $admin->sort}
+                        {if $admin->getSortColumn()}
                             <th class="sort full" data-sort-column>
                                 <span class="title">
                                      <i class="icon-double_triangle"></i>
@@ -112,7 +112,7 @@
                                 </td>
                             {/if}
 
-                            {if $admin->sort}
+                            {if $admin->getSortColumn()}
                                 <td class="sort">
                                     <a href="#" class="sort-handler {if $canSort}active{else}not-active{/if}">
                                         <i class="icon-double_triangle"></i>
