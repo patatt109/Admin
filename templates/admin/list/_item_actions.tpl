@@ -7,7 +7,7 @@
 {/if}
 
 {if "update" in $actions}
-    <a href="{$admin->getUpdateUrl($pk)}">
+    <a href="{$admin->getUpdateUrl($pk)}" class="{if $admin->ownerPk}related-modal{/if}">
         <i class="icon-edit"></i>
     </a>
 {/if}

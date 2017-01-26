@@ -27,3 +27,24 @@
         </div>
     </fieldset>
 {/if}
+
+{var $relatedAdmins = $admin->getInitRelatedAdmins()}
+{if $relatedAdmins}
+    <div class="related-admins">
+        {foreach $relatedAdmins as $relatedAdmin}
+            <div class="related-admin">
+                <h2 class="title">
+                    {$relatedAdmin->getName()}
+                </h2>
+
+                {if $relatedAdmin->ownerPk}
+                    {$relatedAdmin->all('admin/list/_list.tpl')}
+                {else}
+                    <div class="unsaved-error">
+                        Пожалуйста, сохраните объект для работы с этими данными
+                    </div>
+                {/if}
+            </div>
+        {/foreach}
+    </div>
+{/if}

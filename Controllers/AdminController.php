@@ -119,6 +119,9 @@ class AdminController extends BackendController
             if ($parentId) {
                 $admin->parentId = $parentId;
             }
+            if (isset($_GET['ownerPk'])) {
+                $admin->ownerPk = $_GET['ownerPk'];
+            }
             return $admin;
         }
         $this->error(404);

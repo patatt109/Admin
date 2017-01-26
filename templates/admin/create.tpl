@@ -1,4 +1,4 @@
-{extends "admin/base.tpl"}
+{extends $.request->getIsAjax() ? "admin/ajax.tpl" : "admin/base.tpl"}
 
 {block 'heading'}
     <h1>Добавление</h1>
@@ -16,13 +16,15 @@
                         Сохранить
                     </button>
 
-                    <button type="submit" name="save" value="save-stay" class="button transparent pad round">
-                        Сохранить и продолжить
-                    </button>
+                    {if !$.request->getIsAjax()}
+                        <button type="submit" name="save" value="save-stay" class="button transparent pad round">
+                            Сохранить и продолжить
+                        </button>
 
-                    <button type="submit" name="save" value="save-create" class="button transparent pad round">
-                        Сохранить и создать
-                    </button>
+                        <button type="submit" name="save" value="save-create" class="button transparent pad round">
+                            Сохранить и создать
+                        </button>
+                    {/if}
                 </div>
 
                 <div class="links">
@@ -35,13 +37,15 @@
                         </a>
                     {/if}
 
-                    {if $model->pk}
-                        <a href="{$admin->getRemoveUrl($model->pk)}" data-all="{$admin->getAllUrl()}" data-prevention data-title="Вы действительно хотите удалить данный объект?" data-trigger="form-removed">
-                            <i class="icon-delete_in_filter"></i>
-                            <span class="text">
-                                Удалить
-                            </span>
-                        </a>
+                    {if !$.request->getIsAjax()}
+                        {if $model->pk}
+                            <a href="{$admin->getRemoveUrl($model->pk)}" data-all="{$admin->getAllUrl()}" data-prevention data-title="Вы действительно хотите удалить данный объект?" data-trigger="form-removed">
+                                <i class="icon-delete_in_filter"></i>
+                                <span class="text">
+                                    Удалить
+                                </span>
+                            </a>
+                        {/if}
                     {/if}
                 </div>
             </div>

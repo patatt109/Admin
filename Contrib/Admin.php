@@ -38,9 +38,15 @@ abstract class Admin
 {
     use SmartProperties, ClassNames, Renderer;
 
+    /**
+     * @var Model|TreeModel|null
+     */
+    protected $_instance;
+
     public static $public = true;
 
     public $allTemplate = 'admin/all.tpl';
+
     public $listItemActionsTemplate = 'admin/list/_item_actions.tpl';
     public $listPaginationTemplate = 'admin/list/_pagination.tpl';
 
@@ -60,7 +66,46 @@ abstract class Admin
 
     public $autoFixSort = true;
 
+    /**
+     * Parent id for TreeModel
+     *
+     * @var int|null
+     */
     public $parentId = null;
+
+    /**
+     * Owner Pk for RelatedAdmins
+     * @var null
+     */
+    public $ownerPk = null;
+
+    /**
+     * Owner attribute for RelatedAdmins
+     * @var null
+     */
+    public $ownerAttribute = null;
+
+    /**
+     * Get current object
+     *
+     * @return null|Model|TreeModel
+     */
+    public function getInstance()
+    {
+        return $this->_instance;
+    }
+
+    /**
+     * Set current object
+     *
+     * @param $instance
+     * @return $this
+     */
+    public function setInstance($instance)
+    {
+        $this->_instance = $instance;
+        return $this;
+    }
 
     /**
      * @return mixed
@@ -94,6 +139,9 @@ abstract class Admin
             $columns[] = 'rgt';
             $columns[] = 'root';
             $columns[] = 'depth';
+        }
+        if ($this->ownerAttribute) {
+            $columns[] = $this->ownerAttribute;
         }
         return $columns;
     }
@@ -386,6 +434,11 @@ abstract class Admin
                 return $model->objects()->roots();
             }
         }
+        if ($this->ownerAttribute && $this->ownerPk) {
+            return $model->objects()->filter([
+                $this->ownerAttribute => $this->ownerPk
+            ]);
+        }
         return $model->objects()->getQuerySet();
     }
 
@@ -463,7 +516,7 @@ abstract class Admin
                 $newQs = clone($qs);
                 $qLayer = $newQs->getQueryLayer();
                 $queryBuilder = $qLayer->getQueryBuilderRaw();
-                $queryBuilder->query('SET @position = 0;');
+                $queryBuilder->query('SET @position = -1;');
 
                 $model = $this->getModel();
                 $pk = $model->getPkAttribute();
@@ -517,6 +570,9 @@ abstract class Admin
         if ($parentId || $this->parentId) {
             $route = 'admin:create_child';
             $params['parentId'] = $parentId ? $parentId : $this->parentId;
+        }
+        if ($this->ownerPk) {
+            $params['ownerPk'] = $this->ownerPk;
         }
         return Phact::app()->router->url($route, $params);
     }
@@ -591,8 +647,9 @@ abstract class Admin
         return $value;
     }
 
-    public function all()
+    public function all($template = null)
     {
+        $template = $template ?: $this->allTemplate;
         $search = isset($_GET['search']) ? $_GET['search'] : null;
 
         $qs = $this->getQuerySet();
@@ -605,7 +662,7 @@ abstract class Admin
             'pageSizes' => $this->pageSizes
         ]);
 
-        $this->render($this->allTemplate, [
+        $this->render($template, [
             'objects' => $pagination->getData(),
             'pagination' => $pagination,
             'order' => $this->getOrder(),
@@ -685,6 +742,10 @@ abstract class Admin
             $form = $this->getUpdateForm();
         }
 
+        if ($this->ownerAttribute) {
+            $form->exclude[] = $this->ownerAttribute;
+        }
+        $this->setInstance($model);
         if ($this->getIsTree() && $parentId) {
             $model->parent_id = $parentId;
         }
@@ -693,10 +754,19 @@ abstract class Admin
         $form->setInstance($model);
 
         $request = Phact::app()->request;
-        if ($request->getIsPost() && $form->fill($_POST, $_FILES)) {
-            if ($form->valid && $form->save()) {
-                if ($request->getIsAjax()) {
 
+        if ($request->getIsPost() && $form->fill($_POST, $_FILES)) {
+            $safeAttributes = [];
+            if ($this->ownerAttribute && $this->ownerPk) {
+                $safeAttributes[$this->ownerAttribute] = $this->ownerPk;
+            }
+            if ($form->valid && $form->save($safeAttributes)) {
+                if ($request->getIsAjax()) {
+                    $this->jsonResponse([
+                        'content' => $this->renderTemplate('admin/form/ajax_success.tpl'),
+                        'status' => 'success'
+                    ]);
+                    Phact::app()->end();
                 } else {
                     Phact::app()->flash->success('Изменения сохранены');
                     $next = isset($_POST['save']) ? $_POST['save']: 'save';
@@ -808,6 +878,27 @@ abstract class Admin
             }
         }
         return $breadcrumbs;
+    }
+
+    public function getRelatedAdmins()
+    {
+        return [];
+    }
+
+    public function getInitRelatedAdmins()
+    {
+        $config = $this->getRelatedAdmins();
+        $instance = $this->getInstance();
+        $admins = [];
+        foreach ($config as $relation => $class) {
+            /** @var Admin $admin */
+            $admin = new $class;
+            if ($instance && $instance->pk) {
+                $admin->ownerPk = $instance->pk;
+            }
+            $admins[] = $admin;
+        }
+        return $admins;
     }
 
     /**

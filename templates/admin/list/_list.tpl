@@ -1,11 +1,12 @@
 {var $id = $admin->getId()}
 {var $tree = $admin->getIsTree()}
 {var $treeParent = $admin->getTreeParent()}
+{var $related = $admin->ownerPk}
 
 <div class="list-block" data-list data-id="{$id}-list">
     <div class="list-top clearfix">
         <div class="top-buttons-block left">
-            <a href="{$admin->getCreateUrl()}" class="button round upper pad">
+            <a href="{$admin->getCreateUrl()}" class="{if $related}related-modal{/if} button round upper pad">
                 <span class="text">
                     Создать
                 </span>
