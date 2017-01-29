@@ -86,6 +86,11 @@ abstract class Admin
     public static $ownerAttribute = null;
 
     /**
+     * @var array
+     */
+    public $updateList = [];
+
+    /**
      * Sort attribute/column
      */
     public function getSortColumn()
@@ -692,13 +697,20 @@ abstract class Admin
             'pageSizes' => $this->pageSizes
         ]);
 
+        $updateForm = null;
+        if ($this->updateList) {
+            $updateForm = $this->getUpdateForm();
+        }
+
         $this->render($template, [
             'objects' => $pagination->getData(),
             'pagination' => $pagination,
             'order' => $this->getOrder(),
             'search' => $this->getSearchColumns(),
             'columns' => $this->buildListColumns(),
-            'canSort' => $this->getCanSort($qs)
+            'canSort' => $this->getCanSort($qs),
+            'updateList' => $this->updateList,
+            'updateForm' => $updateForm
         ]);
     }
 
@@ -725,6 +737,59 @@ abstract class Admin
         return [true, "Объекты успешно удалены"];
     }
 
+
+
+    public function groupUpdate()
+    {
+        $updateForm = $this->getUpdateForm();
+        $errors = $this->handleGroupUpdateForms($updateForm, $this->updateList, function($form) {
+            /** @var $form ModelForm */
+            if (!$form->valid) {
+                return $form->getErrors();
+            }
+            return [];
+        });
+        $response = [
+            'status' => 'success'
+        ];
+        if (!$errors) {
+            $this->handleGroupUpdateForms($updateForm, $this->updateList, function($form) {
+                /** @var $form ModelForm */
+                $form->save();
+            });
+        } else {
+            $response['status'] = 'error';
+            $response['errors'] = $errors;
+        }
+        $this->jsonResponse($response);
+    }
+
+    /**
+     * @param $form ModelForm
+     * @param $pkList int[]
+     * @param $callable callable
+     * @return array
+     */
+    public function handleGroupUpdateForms($form, $pkList, $callable)
+    {
+        $errors = [];
+        foreach ($pkList as $pk) {
+            $object = $this->getQuerySet()->filter(['pk' => $pk])->get();
+            if ($object) {
+                $form->prefix = $pk . '_';
+                $form->setInstance($object);
+                $form->setInstanceValues();
+                if ($form->fill($_POST, $_FILES)) {
+                    $formErrors = $callable($form);
+                    if ($formErrors) {
+                        $errors[$form->getName()] = $formErrors;
+                    }
+                }
+            }
+        }
+        return $errors;
+    }
+
     public function render($template, $data = [])
     {
         echo $this->renderTemplate($template, array_merge($data, $this->getCommonData()));
@@ -734,6 +799,7 @@ abstract class Admin
     {
         header('Content-Type: application/json');
         echo json_encode($data);
+        Phact::app()->end();
     }
 
     /**

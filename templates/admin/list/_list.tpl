@@ -97,10 +97,17 @@
                 </thead>
                 <tbody>
                     {foreach $objects as $item}
-                        {var $pk = $item->pk}
-                        <tr data-pk="{$pk}" {if $tree and !$item->getIsLeaf()}data-children="{$admin->getAllUrl($pk)}"{/if}>
+                        {set $pk = $item->pk}
+                        {set $update = false}
+                        {if $pk in $admin->updateList}
+                            {set $update = true}
+                            {set $updateForm->prefix = $pk ~ '_'}
+                            {do $updateForm->setInstance($item)}
+                            {do $updateForm->setInstanceValues($item)}
+                        {/if}
+                        <tr data-pk="{$pk}" {if $update}data-formname="{$updateForm->getName()}"{/if} {if $tree and !$item->getIsLeaf()}data-children="{$admin->getAllUrl($pk)}"{/if} class="{if $update}updatable{/if}">
                             <td class="checker">
-                                <input type="checkbox" id="{$id}-{$pk}-check" name="pk_list[]" value="{$pk}">
+                                <input type="checkbox" id="{$id}-{$pk}-check" name="pk_list[]" value="{$pk}" {if $update}checked="checked"{/if}>
                                 <label for="{$id}-{$pk}-check" class="alone"></label>
                             </td>
 
@@ -124,9 +131,15 @@
                                 {var $config = $columns['config'][$column]}
                                 {var $template = $config['template']}
 
-                                <td class="col">
-                                    {include $template}
-                                </td>
+                                {if $update and $updateForm->hasField($column)}
+                                    <td class="col updatable">
+                                        {include 'admin/list/columns/update.tpl'}
+                                    </td>
+                                {else}
+                                    <td class="col">
+                                        {include $template}
+                                    </td>
+                                {/if}
                             {/foreach}
 
                             <td class="actions">
@@ -151,45 +164,51 @@
 
                 <div class="list-footer-block v-align left group">
                     <div>
-                        <div class="checker-wrapper">
-                            <input type="checkbox" id="{$id}-check-all-bottom" data-checkall-list>
-                            <label for="{$id}-check-all-bottom">
-                                Для всех
-                            </label>
-                        </div>
-
-                        {var $actions = $admin->getListGroupActions()}
-                        {if ("update" in $actions) || ("remove" in $actions)}
-                            <div class="group-buttons">
-                                {if ("update" in $actions)}
-                                    <a href="#" class="group-button" data-group-update>
-                                        <i class="icon-edit"></i>
-                                    </a>
-                                {/if}
-
-                                {if ("remove" in $actions)}
-                                    <a href="#" class="group-button" data-group-remove>
-                                        <i class="icon-delete_in_table"></i>
-                                    </a>
-                                {/if}
+                        {if $admin->updateList}
+                            <a href="#" class="button round upper pad" data-group-save>
+                                Сохранить изменения
+                            </a>
+                        {else}
+                            <div class="checker-wrapper">
+                                <input type="checkbox" id="{$id}-check-all-bottom" data-checkall-list>
+                                <label for="{$id}-check-all-bottom">
+                                    Для всех
+                                </label>
                             </div>
-                        {/if}
 
-                        {var $dropdown = $admin->getListDropDownGroupActions()}
-                        {if $dropdown}
-                            <div class="dropdown-block">
-                                <select name="" id="" data-group-action>
-                                    <option value="" selected disabled>Выберите действие</option>
-                                    {foreach $dropdown as $key => $item}
-                                        <option value="{$key}">
-                                            {$item['title']}
-                                        </option>
-                                    {/foreach}
-                                </select>
-                                <button class="button" data-group-submit>
-                                    <i class="icon-check_mark"></i>
-                                </button>
-                            </div>
+                            {var $actions = $admin->getListGroupActions()}
+                            {if ("update" in $actions) || ("remove" in $actions)}
+                                <div class="group-buttons">
+                                    {if ("update" in $actions)}
+                                        <a href="#" class="group-button" data-group-update>
+                                            <i class="icon-edit"></i>
+                                        </a>
+                                    {/if}
+
+                                    {if ("remove" in $actions)}
+                                        <a href="#" class="group-button" data-group-remove>
+                                            <i class="icon-delete_in_table"></i>
+                                        </a>
+                                    {/if}
+                                </div>
+                            {/if}
+
+                            {var $dropdown = $admin->getListDropDownGroupActions()}
+                            {if $dropdown}
+                                <div class="dropdown-block">
+                                    <select name="" id="" data-group-action>
+                                        <option value="" selected disabled>Выберите действие</option>
+                                        {foreach $dropdown as $key => $item}
+                                            <option value="{$key}">
+                                                {$item['title']}
+                                            </option>
+                                        {/foreach}
+                                    </select>
+                                    <button class="button" data-group-submit>
+                                        <i class="icon-check_mark"></i>
+                                    </button>
+                                </div>
+                            {/if}
                         {/if}
                     </div>
                 </div>
