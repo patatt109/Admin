@@ -380,6 +380,12 @@ abstract class Admin
             if (!isset($item['title'])) {
                 $config[$key]['title'] = ucfirst($key);
             }
+            if (!isset($item['order'])) {
+                $config[$key]['order'] = null;
+            }
+            if (!isset($item['template'])) {
+                $config[$key]['template'] = 'admin/list/columns/default.tpl';
+            }
         }
         if ($userColumns) {
             $safeUserColumns = [];
@@ -677,7 +683,11 @@ abstract class Admin
         $value = $item;
         $data = explode('__', $property);
         foreach ($data as $name) {
-            $value = $value->{$name};
+            if (is_object($value)) {
+                $value = $value->{$name};
+            } else {
+                return null;
+            }
         }
         return $value;
     }
