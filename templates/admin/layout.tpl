@@ -35,6 +35,12 @@
                                     <li class="module">
                                         <div class="name">
                                             {$module['name']}
+
+                                            {if $module['settings']}
+                                                <a href="{url 'admin:settings' [$module['key']]}" class="settings-link">
+                                                    <i class="icon-edit"></i>
+                                                </a>
+                                            {/if}
                                         </div>
                                         <ul class="items">
                                             {foreach $module['items'] as $item}

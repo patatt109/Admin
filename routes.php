@@ -63,6 +63,11 @@ return [
         'name' => 'remove'
     ],
     [
+        'route' => '/settings/{:module}',
+        'target' => [\Modules\Admin\Controllers\SettingsController::class, 'index'],
+        'name' => 'settings'
+    ],
+    [
         'route' => '/login',
         'target' => [\Modules\Admin\Controllers\AuthController::class, 'login'],
         'name' => 'login'

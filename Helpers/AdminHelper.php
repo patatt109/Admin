@@ -31,8 +31,9 @@ class AdminHelper
                 if ($moduleMenu) {
                     $menu[] = [
                         'name' => $class::getVerboseName(),
+                        'settings' => $class::getSettingsModel(),
                         'key' => $name,
-                        'class' => $config['class'],
+                        'class' => $class,
                         'items' => $moduleMenu
                     ];
                 }
