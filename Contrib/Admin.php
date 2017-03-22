@@ -556,8 +556,7 @@ abstract class Admin
             if ($raw) {
                 $newQs = clone($qs);
                 $qLayer = $newQs->getQueryLayer();
-                $queryBuilder = $qLayer->getQueryBuilderRaw();
-                $queryBuilder->query('SET @position = -1;');
+                $qLayer->getQuery()->getQueryBuilder()->statement('SET @position = -1;');
 
                 $model = $this->getModel();
                 $pk = $model->getPkAttribute();
