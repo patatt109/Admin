@@ -28,10 +28,11 @@ class AdminHelper
             if (isset($config['class'])) {
                 $class = $config['class'];
                 $moduleMenu = $class::getAdminMenu();
-                if ($moduleMenu) {
+                $settings = $class::getSettingsModel();
+                if ($moduleMenu || $settings) {
                     $menu[] = [
                         'name' => $class::getVerboseName(),
-                        'settings' => $class::getSettingsModel(),
+                        'settings' => $settings,
                         'key' => $name,
                         'class' => $class,
                         'items' => $moduleMenu
