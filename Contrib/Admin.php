@@ -26,7 +26,10 @@ use Phact\Helpers\Text;
 use Phact\Main\Phact;
 use Phact\Orm\Expression;
 use Phact\Orm\Fields\Field;
+use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Fields\PositionField;
+use Phact\Orm\HasManyManager;
+use Phact\Orm\ManyToManyManager;
 use Phact\Orm\Model;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
@@ -556,8 +559,7 @@ abstract class Admin
             if ($raw) {
                 $newQs = clone($qs);
                 $qLayer = $newQs->getQueryLayer();
-                $queryBuilder = $qLayer->getQueryBuilderRaw();
-                $queryBuilder->query('SET @position = -1;');
+                $qLayer->getQuery()->getQueryBuilder()->statement('SET @position = -1;');
 
                 $model = $this->getModel();
                 $pk = $model->getPkAttribute();
@@ -688,6 +690,10 @@ abstract class Admin
             } else {
                 return null;
             }
+        }
+
+        if ($value instanceof ManyToManyManager || $value instanceof HasManyManager) {
+            $value = $value->all();
         }
         return $value;
     }

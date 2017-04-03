@@ -4,4 +4,8 @@
     {var $value = $admin->getItemProperty($item, $column)}
 {/if}
 
-{$value}
+{if $value|is_array}
+    {$value|join:", "}
+{else}
+    {$value}
+{/if}
