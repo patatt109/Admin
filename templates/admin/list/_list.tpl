@@ -5,14 +5,16 @@
 
 <div class="list-block" data-list data-id="{$id}-list">
     <div class="list-top clearfix">
-        <div class="top-buttons-block left">
-            <a href="{$admin->getCreateUrl()}" class="{if $related}related-modal{/if} button round upper pad">
-                <span class="text">
-                    Создать
-                </span>
-                <i class="icon-plus"></i>
-            </a>
-        </div>
+        {if $admin->getForm()}
+            <div class="top-buttons-block left">
+                <a href="{$admin->getCreateUrl()}" class="{if $related}related-modal{/if} button round upper pad">
+                    <span class="text">
+                        Создать
+                    </span>
+                    <i class="icon-plus"></i>
+                </a>
+            </div>
+        {/if}
 
         {if $search}
             <div class="top-search-block left">

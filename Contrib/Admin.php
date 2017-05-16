@@ -689,6 +689,7 @@ abstract class Admin
                 return null;
             }
         }
+
         return $value;
     }
 
