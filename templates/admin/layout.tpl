@@ -31,28 +31,26 @@
                         </div>
                         <ul class="main-menu">
                             {foreach $.admin_menu as $module}
-                                {if $module['items']|count > 0}
-                                    <li class="module">
-                                        <div class="name">
-                                            {$module['name']}
+                                <li class="module">
+                                    <div class="name">
+                                        {$module['name']}
 
-                                            {if $module['settings']}
-                                                <a href="{url 'admin:settings' [$module['key']]}" class="settings-link">
-                                                    <i class="icon-edit"></i>
+                                        {if $module['settings']}
+                                            <a href="{url 'admin:settings' [$module['key']]}" class="settings-link">
+                                                <i class="icon-edit"></i>
+                                            </a>
+                                        {/if}
+                                    </div>
+                                    <ul class="items">
+                                        {foreach $module['items'] as $item}
+                                            <li class="item">
+                                                <a href="{$item['route']}">
+                                                    {$item['name']}
                                                 </a>
-                                            {/if}
-                                        </div>
-                                        <ul class="items">
-                                            {foreach $module['items'] as $item}
-                                                <li class="item">
-                                                    <a href="{$item['route']}">
-                                                        {$item['name']}
-                                                    </a>
-                                                </li>
-                                            {/foreach}
-                                        </ul>
-                                    </li>
-                                {/if}
+                                            </li>
+                                        {/foreach}
+                                    </ul>
+                                </li>
                             {/foreach}
                         </ul>
                     </div>
