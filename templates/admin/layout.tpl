@@ -6,8 +6,8 @@
         {* Title, description, keywords *}
         {block 'seo'}{/block}
 
-        <link rel="stylesheet" href="/static/backend/dist/css/main.css?v={backend_css_version}">
-        <script src="/static/backend/dist/js/main.js?v={backend_js_version}"></script>
+        <link rel="stylesheet" href="/static/backend/dist/css/{$.backend_css_file('main')}">
+        <script src="/static/backend/dist/js/{$.backend_js_file('main')}"></script>
 
         {* Another head information *}
         {block 'head'}{/block}
