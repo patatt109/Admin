@@ -226,6 +226,7 @@
 <script>
     $(function () {
         $('[data-id="{$id}-list"]').adminList({
+            name: "{$id}",
             url: "{$.request->getUrl()}",
             groupActionUrl: "{$admin->getGroupActionUrl()}",
             sortUrl: "{$admin->getSortUrl()}",

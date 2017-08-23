@@ -1007,9 +1007,25 @@ abstract class Admin
             if ($instance && $instance->pk) {
                 $admin->ownerPk = $instance->pk;
             }
+            $admin->afterInit();
             $admins[] = $admin;
         }
         return $admins;
+    }
+
+    public function afterInit()
+    {
+        $id = $this->getId();
+        $name = 'update_' . $id;
+        if (isset($_GET[$name]) && ($updateList = $_GET[$name])) {
+            if (!is_array($updateList)) {
+                $updateList = [$updateList];
+            }
+            $this->updateList = $updateList;
+            if (Phact::app()->request->getIsPost()) {
+                $this->groupUpdate();
+            }
+        }
     }
 
     /**

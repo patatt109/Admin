@@ -22,15 +22,6 @@ class AdminController extends BackendController
     public function all($module, $admin, $parentId = null)
     {
         $admin = $this->getAdmin($module, $admin, $parentId);
-        if (isset($_GET['update']) && ($updateList = $_GET['update'])) {
-            if (!is_array($updateList)) {
-                $updateList = [$updateList];
-            }
-            $admin->updateList = $updateList;
-            if ($this->request->getIsPost()) {
-                $admin->groupUpdate();
-            }
-        }
         $this->setBreadcrumbs($admin);
         $admin->all();
     }
@@ -131,6 +122,7 @@ class AdminController extends BackendController
             if (isset($_GET['ownerPk'])) {
                 $admin->ownerPk = $_GET['ownerPk'];
             }
+            $admin->afterInit();
             return $admin;
         }
         $this->error(404);
