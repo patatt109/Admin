@@ -19,6 +19,7 @@ use Exception;
 use Modules\Admin\Models\AdminConfig;
 use Phact\Components\Flash;
 use Phact\Exceptions\HttpException;
+use Phact\Form\Form;
 use Phact\Form\ModelForm;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
@@ -83,7 +84,7 @@ abstract class Admin
     public $ownerPk = null;
 
     /**
-     * Owner attribute for RelatedAdmins
+     * Owner attribute for RelatedAdmins or BoundAdmins
      * @var null
      */
     public static $ownerAttribute = null;
@@ -92,6 +93,16 @@ abstract class Admin
      * @var array
      */
     public $updateList = [];
+
+    /**
+     * @var Admin[]
+     */
+    protected $_boundAdmins;
+
+    /**
+     * @var ModelForm - used for bound admins
+     */
+    protected $_currentForm;
 
     /**
      * Sort attribute/column
@@ -866,12 +877,14 @@ abstract class Admin
 
         $request = Phact::app()->request;
 
-        if ($request->getIsPost() && $form->fill($_POST, $_FILES)) {
+        if ($request->getIsPost() && $form->fill($_POST, $_FILES) && $this->fillBound($_POST, $_FILES)) {
             $safeAttributes = [];
             if ($this::$ownerAttribute && $this->ownerPk) {
                 $safeAttributes[$this::$ownerAttribute] = $this->ownerPk;
             }
-            if ($form->valid && $form->save($safeAttributes)) {
+            if ($form->valid && $this->validBound()) {
+                $form->save($safeAttributes);
+                $this->saveBound($form->getInstance());
                 if ($request->getIsAjax()) {
                     $this->jsonResponse([
                         'content' => $this->renderTemplate('admin/form/ajax_success.tpl'),
@@ -902,6 +915,38 @@ abstract class Admin
             'model' => $model,
             'new' => $new
         ]);
+    }
+
+    public function fillBound($data, $files)
+    {
+        $filled = true;
+        foreach ($this->getInitBoundAdmins() as $bound) {
+            $form = $bound->getCurrentForm();
+            $filled = $filled && $form->fill($data, $files);
+        }
+        return $filled;
+    }
+
+    public function validBound()
+    {
+        $valid = true;
+        foreach ($this->getInitBoundAdmins() as $bound) {
+            $form = $bound->getCurrentForm();
+            $valid = $valid && $form->valid;
+        }
+        return $valid;
+    }
+
+    public function saveBound($ownerInstance)
+    {
+        foreach ($this->getInitBoundAdmins() as $bound) {
+            $form = $bound->getCurrentForm();
+            if ($bound instanceof BoundAdmin) {
+                $bound->save($form, $ownerInstance);
+            } else {
+                $form->save([$bound::$ownerAttribute => $ownerInstance->pk]);
+            }
+        }
     }
 
     /**
@@ -1011,6 +1056,58 @@ abstract class Admin
             $admins[] = $admin;
         }
         return $admins;
+    }
+
+    public function getBoundAdmins()
+    {
+        return [];
+    }
+
+    public function getInitBoundAdmins()
+    {
+        if (is_null($this->_boundAdmins)) {
+            $config = $this->getBoundAdmins();
+            $instance = $this->getInstance();
+            $this->_boundAdmins = [];
+            foreach ($config as $relation => $class) {
+                /** @var Admin $admin */
+                $admin = new $class;
+                if ($instance && $instance->pk) {
+                    $admin->ownerPk = $instance->pk;
+                }
+
+                // Fetch bound instance
+                $ownerInstance = $this->getInstance();
+                if ($admin instanceof BoundAdmin) {
+                    $model = $admin->fetchModel($ownerInstance);
+                } else {
+                    $class = $admin->getModel();
+                    $model = $class::objects()->filter([$admin::$ownerAttribute => $ownerInstance->pk])->get();
+                }
+                $model = $model ?: $admin->newModel();
+
+                // Make bound form
+                $form = $admin->getForm();
+                $form->setModel($model);
+                $form->setInstance($model);
+                $admin->setCurrentForm($form);
+
+                $admin->afterInit();
+
+                $this->_boundAdmins[] = $admin;
+            }
+        }
+        return $this->_boundAdmins;
+    }
+
+    public function setCurrentForm($form)
+    {
+        $this->_currentForm = $form;
+    }
+
+    public function getCurrentForm()
+    {
+        return $this->_currentForm;
     }
 
     public function afterInit()

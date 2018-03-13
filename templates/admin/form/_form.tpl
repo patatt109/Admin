@@ -28,6 +28,28 @@
     </fieldset>
 {/if}
 
+{set $boundAdmins = $admin->getInitBoundAdmins()}
+{if $boundAdmins}
+    <div class="bound-admins">
+        {foreach $boundAdmins as $boundAdmin}
+            <fieldset>
+                <div class="fieldset-title">
+                    {$boundAdmin->getItemName()}
+                </div>
+                {var $boundForm = $boundAdmin->getCurrentForm()}
+                {var $fields = $boundForm->getInitFields()}
+                <div class="fields">
+                    {foreach $fields as $field}
+                        <div class="form-field {$field->name}">
+                            {raw $field->render()}
+                        </div>
+                    {/foreach}
+                </div>
+            </fieldset>
+        {/foreach}
+    </div>
+{/if}
+
 {var $relatedAdmins = $admin->getInitRelatedAdmins()}
 {if $relatedAdmins}
     <div class="related-admins">
