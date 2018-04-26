@@ -17,12 +17,14 @@ namespace Modules\Admin\Controllers;
 
 use Phact\Form\ModelForm;
 use Phact\Main\Phact;
+use Phact\Module\Module;
 use Phact\Orm\Model;
 
 class SettingsController extends BackendController
 {
     public function index($module)
     {
+        /** @var Module $module */
         $module = Phact::app()->getModule($module);
         /** @var Model $settingsModel */
         $settingsModel = $module::getSettingsModel();
@@ -42,8 +44,9 @@ class SettingsController extends BackendController
 
         if ($this->request->getIsPost() && $settingsForm->fill($_POST, $_FILES) && $settingsForm->valid) {
             $settingsForm->save();
-            $this->request->refresh();
+            $module->afterSettingsUpdate();
             Phact::app()->flash->success('Изменения сохранены');
+            $this->request->refresh();
         }
 
         echo $this->render('admin/settings.tpl', [
