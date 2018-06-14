@@ -6,7 +6,7 @@
         {* Title, description, keywords *}
         {block 'seo'}{/block}
 
-        <link rel="stylesheet" href="{$.assets_public_path('backend/dist/css/' ~ $.backend_css_filename('main'))}">
+        <link rel="stylesheet" href="{$.assets_public_path('main.css', 'backend')}">
 
         {* Another head information *}
         {block 'head'}{/block}
@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <script src="{$.assets_public_path('backend/dist/js/' ~ $.backend_js_filename('main'))}"></script>
+    <script src="{$.assets_public_path('main.js', 'backend')}"></script>
     {render_dependencies_js:raw}
     {render_inline_js:raw}
     {render_dependencies_css:raw}
