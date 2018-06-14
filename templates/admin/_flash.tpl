@@ -2,6 +2,7 @@
     <ul class="flash-list"></ul>
 </div>
 
+{inline_js}
 <script>
     $(function () {
         {foreach $messages as $item}
@@ -9,3 +10,4 @@
         {/foreach}
     })
 </script>
+{/inline_js}

@@ -223,6 +223,7 @@
     </div>
 </div>
 
+{inline_js}
 <script>
     $(function () {
         $('[data-id="{$id}-list"]').adminList({
@@ -234,3 +235,4 @@
         });
     });
 </script>
+{/inline_js}
