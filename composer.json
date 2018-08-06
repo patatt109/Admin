@@ -1,0 +1,26 @@
+{
+  "name": "phact-cmf-modules/admin",
+  "homepage": "https://github.com/phact-cmf-modules/Admin",
+  "version": "0.1",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Admin\\": ""
+    }
+  },
+  "require": {
+    "php": ">=5.6"
+  },
+  "authors": [
+    {
+      "name": "Anton Okulov",
+      "email": "qantus@mail.ru",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "qantus@mail.ru",
+    "issues": "https://github.com/phact-cmf-modules/Admin/issues"
+  }
+}
