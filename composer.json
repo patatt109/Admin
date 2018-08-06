@@ -1,6 +1,7 @@
 {
   "name": "phact-cmf-modules/admin",
   "homepage": "https://github.com/phact-cmf-modules/Admin",
+  "description": "Admin module for phact CMF",
   "version": "1.0.0",
   "type": "library",
   "license": "MIT",
