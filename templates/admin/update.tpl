@@ -1,7 +1,7 @@
 {extends "admin/create.tpl"}
 
 {block 'heading'}
-    <h1>Редактирование</h1>
+    <h1>{t "Admin.main" "Updating"}</h1>
 {/block}
 
 {block 'page_class'}update{/block}

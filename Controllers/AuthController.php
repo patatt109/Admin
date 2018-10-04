@@ -15,18 +15,32 @@ namespace Modules\Admin\Controllers;
 use Modules\Admin\Forms\LoginForm;
 use Modules\User\Models\User;
 use Phact\Controller\Controller;
+use Phact\Di\ContainerInterface;
+use Phact\Interfaces\AuthInterface;
 use Phact\Main\Phact;
+use Phact\Request\HttpRequestInterface;
 
 class AuthController extends Controller
 {
+    /**
+     * @var AuthInterface
+     */
+    protected $_auth;
+
+    public function __construct(HttpRequestInterface $request, AuthInterface $auth)
+    {
+        $this->_auth = $auth;
+
+        parent::__construct($request);
+    }
+
     public function login()
     {
-        /** @var User $user */
-        $user = Phact::app()->getUser();
+        $user = $this->_auth->getUser();
         if (!$user->getIsGuest()) {
             $this->redirect('admin:index');
         }
-        $form = new LoginForm();
+        $form = new LoginForm([], $this->_auth);
         if ($this->request->getIsPost() && $form->fill($_POST)) {
             if ($form->valid) {
                 $form->login();
@@ -40,7 +54,7 @@ class AuthController extends Controller
 
     public function logout()
     {
-        Phact::app()->auth->logout();
+        $this->_auth->logout();
         $this->redirect('admin:login');
     }
 }

@@ -8,14 +8,14 @@
 {block 'main_block'}
     <div class="login-page">
         <div class="login-block">
-            <h1>Вход</h1>
+            <h1>{t "Admin.auth" "Login"}</h1>
 
             <form action="" method="post">
                 {raw $form->render()}
 
                 <div class="buttons">
                     <button type="submit" class="button round default">
-                        Войти
+                        {t "Admin.auth" "Log in"}
                     </button>
                 </div>
             </form>

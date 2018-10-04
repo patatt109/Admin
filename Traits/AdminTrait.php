@@ -14,7 +14,9 @@ namespace Modules\Admin\Traits;
 
 
 use Modules\Admin\Contrib\Admin;
+use Phact\Di\ComponentFetcher;
 use Phact\Main\Phact;
+use Phact\Router\RouterInterface;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -24,10 +26,22 @@ use RecursiveIteratorIterator;
  */
 trait AdminTrait
 {
+    use ComponentFetcher;
+
     public static $adminFolder = 'Admin';
 
+    /**
+     * Build admin menu
+     * @return array
+     * @throws \Exception
+     */
     public static function getAdminMenu()
     {
+        /** @var RouterInterface $router */
+        $router = self::fetchComponent(RouterInterface::class);
+        if (!$router) {
+            return [];
+        }
         $menu = [];
         $adminClasses = static::getAdminClasses();
         foreach ($adminClasses as $adminClass) {
@@ -37,7 +51,7 @@ trait AdminTrait
                     'adminClassNameShort' => $adminClass::classNameShort(),
                     'moduleName' => static::getName(),
                     'name' => $adminClass::getName(),
-                    'route' => Phact::app()->router->url('admin:all', [
+                    'route' => $router->url('admin:all', [
                         'module' => static::getName(),
                         'admin' => $adminClass::classNameShort()
                     ])
@@ -47,6 +61,10 @@ trait AdminTrait
         return $menu;
     }
 
+    /**
+     * Get admin classes of current module
+     * @return array
+     */
     public static function getAdminClasses()
     {
         $classes = [];

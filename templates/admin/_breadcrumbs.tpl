@@ -3,7 +3,7 @@
         <ul class="breadcrumbs-list">
             <li>
                 <a href="{url route="admin:index"}">
-                    Главная
+                    {t "Admin.main" "Home"}
                 </a>
             </li>
 

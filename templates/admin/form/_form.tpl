@@ -63,7 +63,7 @@
                     {$relatedAdmin->all('admin/list/_list.tpl')}
                 {else}
                     <div class="unsaved-error">
-                        Пожалуйста, сохраните объект для работы с этими данными
+                        {t "Admin.main" "Please save the object to work with this data"}
                     </div>
                 {/if}
             </div>

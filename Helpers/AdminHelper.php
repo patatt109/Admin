@@ -12,19 +12,21 @@
 
 namespace Modules\Admin\Helpers;
 
-use Phact\Helpers\Paths;
-use Phact\Main\Phact;
+use Phact\Application\ModulesInterface;
+use Phact\Di\ComponentFetcher;
 
 class AdminHelper
 {
+    use ComponentFetcher;
+
     public static function getMenu()
     {
         $menu = [];
-        $modules = Phact::app()->getModulesConfig();
+        /** @var ModulesInterface $modules */
+        $modules = self::fetchComponent(ModulesInterface::class);
 
-        foreach ($modules as $name => $config) {
-            if (isset($config['class'])) {
-                $class = $config['class'];
+        if ($modules) {
+            foreach ($modules->getModulesClasses() as $name => $class) {
                 $moduleMenu = $class::getAdminMenu();
                 $settings = $class::getSettingsModel();
                 if ($moduleMenu || $settings) {

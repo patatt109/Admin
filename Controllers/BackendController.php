@@ -12,20 +12,30 @@
 
 namespace Modules\Admin\Controllers;
 
-use Modules\User\Forms\LoginForm;
-use Modules\User\Helpers\Password;
-use Modules\User\Models\User;
 use Phact\Controller\Controller;
-use Phact\Main\Phact;
+use Phact\Interfaces\AuthInterface;
+use Phact\Request\HttpRequestInterface;
 
 class BackendController extends Controller
 {
+    /**
+     * @var AuthInterface
+     */
+    protected $_auth;
+
+    public function __construct(HttpRequestInterface $request, AuthInterface $auth)
+    {
+        $this->_auth = $auth;
+
+        parent::__construct($request);
+    }
+
     public function beforeAction($action, $params)
     {
-        $user = Phact::app()->auth->getUser();
-        if (!$user || $user->is_guest) {
+        $user = $this->_auth->getUser();
+        if (!$user || $user->getIsGuest()) {
             $this->request->redirect('admin:login');
-        } elseif (!$user->is_superuser) {
+        } elseif (!$user->getIsSuperuser()) {
             $this->error(404);
         }
     }

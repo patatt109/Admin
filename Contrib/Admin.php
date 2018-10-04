@@ -13,19 +13,16 @@
 namespace Modules\Admin\Contrib;
 
 
-use Exception;
 use Modules\Admin\Models\AdminConfig;
-use Phact\Components\Flash;
+use Phact\Components\FlashInterface;
 use Phact\Exceptions\HttpException;
-use Phact\Form\Form;
 use Phact\Form\ModelForm;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
-use Phact\Main\Phact;
+use Phact\Interfaces\AuthInterface;
 use Phact\Orm\Expression;
 use Phact\Orm\Fields\Field;
-use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Fields\PositionField;
 use Phact\Orm\HasManyManager;
 use Phact\Orm\ManyToManyManager;
@@ -35,7 +32,10 @@ use Phact\Orm\QuerySet;
 use Phact\Orm\TreeModel;
 use Phact\Orm\TreeQuerySet;
 use Phact\Pagination\Pagination;
+use Phact\Request\HttpRequestInterface;
+use Phact\Router\RouterInterface;
 use Phact\Template\Renderer;
+use Phact\Translate\Translator;
 
 abstract class Admin
 {
@@ -101,6 +101,46 @@ abstract class Admin
      * @var ModelForm - used for bound admins
      */
     protected $_currentForm;
+
+    /**
+     * @var FlashInterface|null
+     */
+    protected $_flash;
+
+    /**
+     * @var RouterInterface
+     */
+    protected $_router;
+
+    /**
+     * @var HttpRequestInterface
+     */
+    protected $_request;
+
+    /**
+     * @var Translator|null
+     */
+    protected $_translator;
+
+    /**
+     * @var AuthInterface
+     */
+    protected $_auth;
+
+    public function __construct(
+        HttpRequestInterface $request,
+        RouterInterface $router,
+        AuthInterface $auth,
+        FlashInterface $flash = null,
+        Translator $translator = null
+    )
+    {
+        $this->_router = $router;
+        $this->_flash = $flash;
+        $this->_request = $request;
+        $this->_translator = $translator;
+        $this->_auth = $auth;
+    }
 
     /**
      * Sort attribute/column
@@ -280,9 +320,7 @@ abstract class Admin
 
     public function handleGroupAction($action, $pkList = [])
     {
-        /** @var Flash $flash */
-        $flash = Phact::app()->flash;
-        $request = Phact::app()->request;
+        $request = $this->_request;
 
         $actions = $this->getListGroupActionsConfig();
         if (!isset($actions[$action])) {
@@ -295,7 +333,7 @@ abstract class Admin
         $result = call_user_func($callback, $qs, $pkList);
 
         $success = true;
-        $message = 'Изменения успешно применены';
+        $message = $this->t('Admin.main', 'Changes successfully applied');
 
         if (is_array($result) && count($result) == 2 && is_bool($result[0]) && is_string($result[1])) {
             $success = $result[0];
@@ -305,7 +343,7 @@ abstract class Admin
             if (is_string($result)) {
                 $message = $result;
             } else {
-                $message = 'При применении изменений произошла ошибка';
+                $message = $this->t('Admin.main', 'An error occurred while applying the changes');
             }
         }
 
@@ -314,9 +352,11 @@ abstract class Admin
                 'success' => $success,
                 'message' => $message
             ]);
-            Phact::app()->end();
+            exit();
         } else {
-            $flash->add($message, $success ? 'success' : 'error');
+            if ($this->_flash) {
+                $this->_flash->add($message, $success ? 'success' : 'error');
+            }
             $request->redirect($this->getAllUrl());
         }
     }
@@ -339,7 +379,7 @@ abstract class Admin
      */
     public function getUserColumns()
     {
-        $config = AdminConfig::fetch(static::getModuleName(), static::classNameShort());
+        $config = AdminConfig::fetch(static::getModuleName(), static::classNameShort(), $this->_auth->getUser()->getLogin());
         return $config->getColumnsList();
     }
 
@@ -557,25 +597,47 @@ abstract class Admin
     }
 
     /**
+     * Fix duplicate position values
      * @param $qs QuerySet
      * @return mixed
      */
     public function fixSort($qs)
     {
         if (($sort = $this->getSortColumn()) && $this->autoFixSort && $this->getCanSort($qs)) {
-            $newQs = clone($qs);
-            $raw = $newQs->group([$sort])->having(new Expression('c > 1'))->values([$sort, new Expression('count(*) as c')]);
-            if ($raw) {
-                $newQs = clone($qs);
-                $qLayer = $newQs->getQueryLayer();
-                $qLayer->getQuery()->getQueryBuilder()->statement('SET @position = -1;');
 
-                $model = $this->getModel();
-                $pk = $model->getPkAttribute();
+            $model = $this->getModel();
+            $pk = $model->getPkAttribute();
 
-                $newQs->order([$sort, $pk])->update([
-                    $sort => new Expression("@position := (@position + 1)")
+            while ($needFix = (clone($qs))->
+                group([$sort])->
+                limit(1)->
+                having(new Expression('c > 1'))->
+                values([$sort, new Expression('count(*) as c')]
+            )) {
+                $item = $needFix[0];
+
+                $ids = (clone($qs))->filter([
+                    $sort => $item[$sort]
+                ])->offset(1)->order([$pk])->values([$pk], true);
+
+                $increaseSort = count($ids);
+
+                // Update records with greater positions
+                (clone($qs))->filter([
+                    "{$sort}__gt" => $item[$sort]
+                ])->update([
+                    $sort => new Expression("{{$sort}} + ?", [$increaseSort])
                 ]);
+
+                // Update records with duplicate positions
+                foreach ($ids as $key => $id) {
+                    $position = $key + 1;
+                    (clone($qs))->filter([
+                        $pk => $id
+                    ])->update([
+                        $sort => new Expression("{{$sort}} + ?", [$position])
+                    ]);
+                }
             }
         }
         return $qs;
@@ -609,7 +671,7 @@ abstract class Admin
             $route = 'admin:all_children';
             $params['parentId'] = $parentId;
         }
-        return Phact::app()->router->url($route, $params);
+        return $this->_router->url($route, $params);
     }
 
     public function getCreateUrl($parentId = null)
@@ -626,12 +688,12 @@ abstract class Admin
         if ($this->ownerPk) {
             $params['ownerPk'] = $this->ownerPk;
         }
-        return Phact::app()->router->url($route, $params);
+        return $this->_router->url($route, $params);
     }
 
     public function getUpdateUrl($pk = null)
     {
-        return Phact::app()->router->url('admin:update', [
+        return $this->_router->url('admin:update', [
             'module' => static::getModuleName(),
             'admin' => static::classNameShort(),
             'pk' => $pk
@@ -640,7 +702,7 @@ abstract class Admin
 
     public function getInfoUrl($pk = null)
     {
-        return Phact::app()->router->url('admin:info', [
+        return $this->_router->url('admin:info', [
             'module' => static::getModuleName(),
             'admin' => static::classNameShort(),
             'pk' => $pk
@@ -649,7 +711,7 @@ abstract class Admin
 
     public function getRemoveUrl($pk = null)
     {
-        return Phact::app()->router->url('admin:remove', [
+        return $this->_router->url('admin:remove', [
             'module' => static::getModuleName(),
             'admin' => static::classNameShort(),
             'pk' => $pk
@@ -658,7 +720,7 @@ abstract class Admin
 
     public function getGroupActionUrl()
     {
-        return Phact::app()->router->url('admin:group_action', [
+        return $this->_router->url('admin:group_action', [
             'module' => static::getModuleName(),
             'admin' => static::classNameShort()
         ]);
@@ -676,14 +738,14 @@ abstract class Admin
                 $route = 'admin:sort_children';
                 $params['parentId'] = $parentId ? $parentId : $this->parentId;
             }
-            return Phact::app()->router->url($route, $params);
+            return $this->_router->url($route, $params);
         }
         return null;
     }
 
     public function getColumnsUrl()
     {
-        return Phact::app()->router->url('admin:columns', [
+        return $this->_router->url('admin:columns', [
             'module' => static::getModuleName(),
             'admin' => static::classNameShort()
         ]);
@@ -745,7 +807,7 @@ abstract class Admin
         if ($removed) {
             $data = ['success' => true];
         } else {
-            $data = ['error' => 'При удалении объекта произошла ошибка'];
+            $data = ['error' => $this->t('Admin.main', 'An error occurred while deleting the object')];
         }
         $this->jsonResponse($data);
     }
@@ -758,7 +820,7 @@ abstract class Admin
     public function groupRemove($qs, $pkList)
     {
         $qs->delete();
-        return [true, "Объекты успешно удалены"];
+        return [true, $this->t('Admin.main', 'Objects deleted successfully')];
     }
 
 
@@ -823,7 +885,7 @@ abstract class Admin
     {
         header('Content-Type: application/json');
         echo json_encode($data);
-        Phact::app()->end();
+        exit();
     }
 
     /**
@@ -873,7 +935,7 @@ abstract class Admin
         $form->setModel($model);
         $form->setInstance($model);
 
-        $request = Phact::app()->request;
+        $request = $this->_request;
 
         if ($request->getIsPost() && $form->fill($_POST, $_FILES) && $this->fillBound($_POST, $_FILES)) {
             $safeAttributes = [];
@@ -888,9 +950,11 @@ abstract class Admin
                         'content' => $this->renderTemplate('admin/form/ajax_success.tpl'),
                         'status' => 'success'
                     ]);
-                    Phact::app()->end();
+                    exit();
                 } else {
-                    Phact::app()->flash->success('Изменения сохранены');
+                    if ($this->_flash) {
+                        $this->_flash->success($this->t('Admin.main', 'Changes saved'));
+                    }
                     $next = isset($_POST['save']) ? $_POST['save']: 'save';
                     if ($next == 'save') {
                         $request->redirect($this->getAllUrl($this->parentId));
@@ -902,7 +966,7 @@ abstract class Admin
                 }
             } else {
                 if (!$request->getIsAjax()) {
-                    Phact::app()->flash->error('Пожалуйста, исправьте ошибки');
+                    $this->_flash->error($this->t('Admin.main', 'Please correct errors'));
                 }
             }
         }
@@ -1007,7 +1071,7 @@ abstract class Admin
 
     public function setColumns($columns)
     {
-        $config = AdminConfig::fetch(static::getModuleName(), static::classNameShort());
+        $config = AdminConfig::fetch(static::getModuleName(), static::classNameShort(), $this->_auth->getUser()->getLogin());
         $config->setColumnsList($columns);
         $this->jsonResponse([
             'success' => true
@@ -1117,7 +1181,7 @@ abstract class Admin
                 $updateList = [$updateList];
             }
             $this->updateList = $updateList;
-            if (Phact::app()->request->getIsPost()) {
+            if ($this->_request->getIsPost()) {
                 $this->groupUpdate();
             }
         }
@@ -1137,5 +1201,13 @@ abstract class Admin
     public static function getItemName()
     {
         return static::classNameShort();
+    }
+
+    protected function t($domain, $key)
+    {
+        if ($this->_translator) {
+            return $this->_translator->t($domain, $key);
+        }
+        return $key;
     }
 }

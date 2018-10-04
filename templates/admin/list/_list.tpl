@@ -9,7 +9,7 @@
             <div class="top-buttons-block left">
                 <a href="{$admin->getCreateUrl()}" class="{if $related}related-modal{/if} button round upper pad">
                     <span class="text">
-                        Создать
+                        {t "Admin.main" "Create"}
                     </span>
                     <i class="icon-plus"></i>
                 </a>
@@ -18,7 +18,7 @@
 
         {if $search}
             <div class="top-search-block left">
-                <input type="text" data-list-search placeholder="Поиск...">
+                <input type="text" data-list-search placeholder="{t "Admin.main" "Search"}...">
             </div>
         {/if}
     </div>
@@ -151,7 +151,7 @@
                     {foreachelse}
                         <tr class="empty">
                             <td colspan="{$cols}" class="text-center">
-                                Пока здесь нет ни одной записи
+                                {t "Admin.main" "There are no records yet"}
                             </td>
                         </tr>
                     {/foreach}
@@ -160,7 +160,7 @@
             <div class="list-footer clearfix">
                 <div class="list-footer-block v-align right total">
                     <div>
-                        Всего записей: {$pagination->getTotal()}
+                        {t "Admin.main" "Total records"}: {$pagination->getTotal()}
                     </div>
                 </div>
 
@@ -168,13 +168,13 @@
                     <div>
                         {if $admin->updateList}
                             <a href="#" class="button round upper pad" data-group-save>
-                                Сохранить изменения
+                                {t "Admin.main" "Save changes"}
                             </a>
                         {else}
                             <div class="checker-wrapper">
                                 <input type="checkbox" id="{$id}-check-all-bottom" data-checkall-list>
                                 <label for="{$id}-check-all-bottom">
-                                    Для всех
+                                    {t "Admin.main" "For all records"}
                                 </label>
                             </div>
 
@@ -199,7 +199,7 @@
                             {if $dropdown}
                                 <div class="dropdown-block">
                                     <select name="" id="" data-group-action>
-                                        <option value="" selected disabled>Выберите действие</option>
+                                        <option value="" selected disabled>{t "Admin.main" "Select action"}</option>
                                         {foreach $dropdown as $key => $item}
                                             <option value="{$key}">
                                                 {$item['title']}

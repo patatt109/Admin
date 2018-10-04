@@ -3,12 +3,12 @@
 <head>
     {if !$.request->getIsAjax()}
         <meta charset="utf-8">
-        {* Title, description, keywords *}
+        {*Title, description, keywords*}
         {block 'seo'}{/block}
 
         <link rel="stylesheet" href="{$.assets_public_path('main.css', 'admin')}">
 
-        {* Another head information *}
+        {*Another head information*}
         {block 'head'}{/block}
     {/if}
 </head>
@@ -26,7 +26,7 @@
                     </div>
                     <div class="menu-wrapper">
                         <div class="search-block">
-                            <input type="text" data-menu-search placeholder="Поиск...">
+                            <input type="text" data-menu-search placeholder="{t "Admin.main" "Search"}...">
                         </div>
                         <ul class="main-menu">
                             {foreach $.admin_menu as $module}

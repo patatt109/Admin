@@ -12,11 +12,7 @@
 
 namespace Modules\Admin\Models;
 
-
-use Modules\User\Models\User;
-use Phact\Main\Phact;
 use Phact\Orm\Fields\CharField;
-use Phact\Orm\Fields\ForeignField;
 use Phact\Orm\Fields\TextField;
 use Phact\Orm\Model;
 
@@ -33,10 +29,9 @@ class AdminConfig extends Model
                 'class' => CharField::class,
                 'label' => 'Admin'
             ],
-            'user' => [
-                'class' => ForeignField::class,
-                'label' => 'User',
-                'modelClass' => User::class
+            'user_login' => [
+                'class' => CharField::class,
+                'label' => 'User id'
             ],
             // Comma-separated columns
             'columns' => [
@@ -59,18 +54,18 @@ class AdminConfig extends Model
         $this->save();
     }
 
-    public static function fetch($module, $admin)
+    public static function fetch($module, $admin, $userLogin)
     {
         $model = self::objects()->filter([
             'module' => $module,
             'admin' => $admin,
-            'user_id' => Phact::app()->user->id
+            'user_login' => $userLogin
         ])->get();
         if (!$model) {
             $model = new self();
             $model->module = $module;
             $model->admin = $admin;
-            $model->user_id = Phact::app()->user->id;
+            $model->user_login = $userLogin;
         }
         return $model;
     }

@@ -1,7 +1,7 @@
 {extends $.request->getIsAjax() ? "admin/ajax.tpl" : "admin/base.tpl"}
 
 {block 'heading'}
-    <h1>Настройки модуля "{$settingsModule->getVerboseName()}"</h1>
+    <h1>{t "Admin.main" "Settings of module"} "{$settingsModule->getVerboseName()}"</h1>
 {/block}
 
 {block 'main_block'}
@@ -22,7 +22,7 @@
             <div class="actions-panel">
                 <div class="buttons">
                     <button type="submit" name="save" value="save" class="button pad round">
-                        Сохранить
+                        {t "Admin.main" "Save"}
                     </button>
                 </div>
             </div>

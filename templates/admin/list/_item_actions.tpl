@@ -25,7 +25,7 @@
 {/if}
 
 {if "remove" in $actions}
-    <a href="{$admin->getRemoveUrl($pk)}" data-prevention data-title="Вы действительно хотите удалить данный объект?" data-trigger="list-update">
+    <a href="{$admin->getRemoveUrl($pk)}" data-prevention data-title="{t "Admin.main" "Do you really want to delete this object?"}" data-trigger="list-update">
         <i class="icon-delete_in_table"></i>
     </a>
 {/if}
