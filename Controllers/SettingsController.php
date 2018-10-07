@@ -17,10 +17,12 @@ use Phact\Components\BreadcrumbsInterface;
 use Phact\Components\FlashInterface;
 use Phact\Form\ModelForm;
 use Phact\Interfaces\AuthInterface;
+use Phact\Main\Phact;
 use Phact\Module\Module;
 use Phact\Orm\Model;
 use Phact\Request\HttpRequestInterface;
-use Phact\Translate\Translator;
+use Phact\Template\RendererInterface;
+use Phact\Translate\Translate;
 
 class SettingsController extends BackendController
 {
@@ -33,24 +35,25 @@ class SettingsController extends BackendController
     /** @var FlashInterface */
     protected $_flash;
 
-    /** @var Translator */
-    protected $_translator;
+    /** @var Translate */
+    protected $_translate;
 
     public function __construct(
         HttpRequestInterface $request,
         AuthInterface $auth,
         ModulesInterface $modules,
+        RendererInterface $renderer,
         FlashInterface $flash = null,
         BreadcrumbsInterface $breadcrumbs = null,
-        Translator $translator = null
+        Translate $translate = null
     )
     {
         $this->_modules = $modules;
         $this->_breadcrumbs = $breadcrumbs;
         $this->_flash = $flash;
-        $this->_translator = $translator;
+        $this->_translate = $translate;
 
-        parent::__construct($request, $auth);
+        parent::__construct($request, $auth, $renderer);
     }
 
     public function index($module)
@@ -58,7 +61,7 @@ class SettingsController extends BackendController
         /** @var Module $module */
         $module = $this->_modules->getModule($module);
         /** @var Model $settingsModel */
-        $settingsModel = $module::getSettingsModel();
+        $settingsModel = $module->getSettingsModel();
         if (!$settingsModel) {
             $this->error(404);
         }
@@ -67,20 +70,20 @@ class SettingsController extends BackendController
             $model = $settingsModel;
         }
         /** @var ModelForm $settingsForm */
-        $settingsForm = $module::getSettingsForm();
+        $settingsForm = $module->getSettingsForm();
         $settingsForm->setModel($model);
         $settingsForm->setInstance($model);
 
-        if ($this->_breadcrumbs && $this->_translator) {
-            $message = $this->_translator->t('Admin.main', 'Settings of module');
-            $this->_breadcrumbs->add($message . ' "' . $module::getVerboseName() . '"');
+        if ($this->_breadcrumbs && $this->_translate) {
+            $message = $this->_translate->t('Admin.main', 'Settings of module');
+            $this->_breadcrumbs->add($message . ' "' . $module->getVerboseName() . '"');
         }
 
         if ($this->request->getIsPost() && $settingsForm->fill($_POST, $_FILES) && $settingsForm->valid) {
             $settingsForm->save();
             $module->afterSettingsUpdate();
-            if ($this->_flash && $this->_translator) {
-                $this->_flash->success($this->_translator->t('Admin.main', 'Changes saved'));
+            if ($this->_flash && $this->_translate) {
+                $this->_flash->success($this->_translate->t('Admin.main', 'Changes saved'));
             }
             $this->request->refresh();
         }

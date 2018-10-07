@@ -13,14 +13,22 @@
 namespace Modules\Admin\Controllers;
 
 use Modules\Admin\Contrib\Admin;
+use Modules\Admin\Contrib\AdminMenuInterface;
+use Phact\Application\ModulesInterface;
 use Phact\Components\BreadcrumbsInterface;
 use Phact\Di\ContainerInterface;
 use Phact\Interfaces\AuthInterface;
 use Phact\Request\HttpRequestInterface;
-use Phact\Translate\Translator;
+use Phact\Template\RendererInterface;
+use Phact\Translate\Translate;
 
 class AdminController extends BackendController
 {
+    /**
+     * @var ModulesInterface
+     */
+    protected $_modules;
+
     /**
      * @var BreadcrumbsInterface
      */
@@ -32,22 +40,26 @@ class AdminController extends BackendController
     protected $_container;
 
     /**
-     * @var Translator
+     * @var Translate
      */
-    protected $_translator;
+    protected $_translate;
 
     public function __construct(
+        ModulesInterface $modules,
         HttpRequestInterface $request,
         BreadcrumbsInterface $breadcrumbs,
         ContainerInterface $container,
         AuthInterface $auth,
-        Translator $translator = null
+        RendererInterface $renderer,
+        Translate $translate = null
     )
     {
         $this->_breadcrumbs = $breadcrumbs;
         $this->_container = $container;
+        $this->_modules = $modules;
+        $this->_translate = $translate;
 
-        parent::__construct($request, $auth);
+        parent::__construct($request, $auth, $renderer);
     }
 
     public function all($module, $admin, $parentId = null)
@@ -147,25 +159,42 @@ class AdminController extends BackendController
      */
     public function getAdmin($module, $admin, $parentId = null)
     {
-        $class = "Modules\\{$module}\\Admin\\{$admin}";
-        if (class_exists($class)) {
-            $admin = $this->_container->construct($class);
+        $adminInstance = null;
+        $module = $this->_modules->getModule($module);
+        if ($module instanceof AdminMenuInterface) {
+            $admins = $module->getAdmins();
+            if (isset($admins[$admin])) {
+                $adminInstance = $admins[$admin];
+            }
+        }
+        if ($adminInstance) {
             if ($parentId) {
-                $admin->parentId = $parentId;
+                $adminInstance->parentId = $parentId;
             }
             if (isset($_GET['ownerPk'])) {
-                $admin->ownerPk = $_GET['ownerPk'];
+                $adminInstance->ownerPk = $_GET['ownerPk'];
             }
-            $admin->afterInit();
-            return $admin;
+            $adminInstance->afterInit();
+            return $adminInstance;
         }
         $this->error(404);
     }
 
-    protected function t($domain, $key)
+
+    /**
+     * Translate
+     *
+     * @param $domain
+     * @param string $key
+     * @param null $number
+     * @param array $parameters
+     * @param null $locale
+     * @return string
+     */
+    public function t($domain, $key = "", $number = null, $parameters = [], $locale = null)
     {
-        if ($this->_translator) {
-            return $this->_translator->t($domain, $key);
+        if ($this->_translate) {
+            return $this->_translate->t($domain, $key, $number, $parameters, $locale);
         }
         return $key;
     }

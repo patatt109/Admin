@@ -43,8 +43,8 @@
                                     <ul class="items">
                                         {foreach $module['items'] as $item}
                                             <li class="item">
-                                                <a href="{$item['route']}">
-                                                    {$item['name']}
+                                                <a href="{$item->getAllUrl()}">
+                                                    {$item->getName()}
                                                 </a>
                                             </li>
                                         {/foreach}

@@ -26,58 +26,66 @@ use RecursiveIteratorIterator;
  */
 trait AdminTrait
 {
-    use ComponentFetcher;
-
-    public static $adminFolder = 'Admin';
+    public $adminFolder = 'Admin';
 
     /**
      * Build admin menu
      * @return array
      * @throws \Exception
      */
-    public static function getAdminMenu()
+    public function getPublicAdmins(): array
     {
-        /** @var RouterInterface $router */
-        $router = self::fetchComponent(RouterInterface::class);
-        if (!$router) {
-            return [];
-        }
-        $menu = [];
-        $adminClasses = static::getAdminClasses();
-        foreach ($adminClasses as $adminClass) {
-            if (is_a($adminClass, Admin::class, true) && $adminClass::getIsPublic()) {
-                $menu[] = [
-                    'adminClassName' => $adminClass::className(),
-                    'adminClassNameShort' => $adminClass::classNameShort(),
-                    'moduleName' => static::getName(),
-                    'name' => $adminClass::getName(),
-                    'route' => $router->url('admin:all', [
-                        'module' => static::getName(),
-                        'admin' => $adminClass::classNameShort()
-                    ])
-                ];
+        $items = [];
+        $adminInstances = $this->getAdmins();
+        foreach ($adminInstances as $name => $admin) {
+            if ($admin->getIsPublic()) {
+                $items[$name] = $admin;
             }
         }
-        return $menu;
+        return $items;
     }
 
     /**
      * Get admin classes of current module
-     * @return array
+     * @return Admin[]
+     * @throws \Phact\Exceptions\ContainerException
+     * @throws \Phact\Exceptions\NotFoundContainerException
+     * @throws \ReflectionException
      */
-    public static function getAdminClasses()
+    public function getAdmins(): array
     {
-        $classes = [];
-        $modulePath = self::getPath();
-        $path = implode(DIRECTORY_SEPARATOR, [$modulePath, static::$adminFolder]);
+        $admins = [];
+        $modulePath = $this->getPath();
+        $path = implode(DIRECTORY_SEPARATOR, [$modulePath, $this->adminFolder]);
         if (is_dir($path)) {
             foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename)
             {
                 if ($filename->isDir()) continue;
                 $name = $filename->getBasename('.php');
-                $classes[] = implode('\\', ['Modules', static::getName(), static::$adminFolder, $name]);
+                $class = implode('\\', [static::classNamespace(), $this->adminFolder, $name]);
+                $admins[$name] = $this->createAdmin($class, $name);
             }
         }
-        return $classes;
+        return $admins;
+    }
+
+    /**
+     * Make instance of Admin
+     * @param $class
+     * @param $name
+     * @return Admin
+     * @throws \Phact\Exceptions\ContainerException
+     * @throws \Phact\Exceptions\NotFoundContainerException
+     * @throws \ReflectionException
+     */
+    protected function createAdmin($class, $name): Admin
+    {
+        if ($app = Phact::app()) {
+            return $app->getContainer()->construct($class, [
+                $name,
+                $this->getName()
+            ]);
+        }
+        throw new \Exception(sprintf('Unable to load admin %s', $class));
     }
 }

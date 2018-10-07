@@ -36,12 +36,12 @@ class LoginForm extends Form
         return [
             'email' => [
                 'class' => EmailField::class,
-                'label' => $this->t('Admin.auth', 'E-mail'),
+                'label' => self::t('Admin.auth', 'E-mail'),
                 'required' => true
             ],
             'password' => [
                 'class' => PasswordField::class,
-                'label' => $this->t('Admin.auth', 'Password'),
+                'label' => self::t('Admin.auth', 'Password'),
                 'required' => true
             ]
         ];
@@ -55,10 +55,10 @@ class LoginForm extends Form
         $user = $this->_auth->findUserByLogin($email);
         if ($user) {
             if (!$this->_auth->verifyPassword($user, $password)) {
-                $this->addError('password', $this->t('Admin.auth', 'Incorrect password'));
+                $this->addError('password', self::t('Admin.auth', 'Incorrect password'));
             }
         } else {
-            $this->addError('email', $this->t('Admin.auth', 'User with this e-mail address is not registered'));
+            $this->addError('email', self::t('Admin.auth', 'User with this e-mail address is not registered'));
         }
     }
 

@@ -12,6 +12,7 @@
 
 namespace Modules\Admin\Helpers;
 
+use Modules\Admin\Contrib\AdminMenuInterface;
 use Phact\Application\ModulesInterface;
 use Phact\Di\ComponentFetcher;
 
@@ -26,19 +27,23 @@ class AdminHelper
         $modules = self::fetchComponent(ModulesInterface::class);
 
         if ($modules) {
-            foreach ($modules->getModulesClasses() as $name => $class) {
-                $moduleMenu = $class::getAdminMenu();
-                $settings = $class::getSettingsModel();
-                if ($moduleMenu || $settings) {
+            foreach ($modules->getModules() as $name => $module) {
+                $items = [];
+                if ($module instanceof AdminMenuInterface) {
+                    $items = $module->getPublicAdmins();
+                }
+                $settings = $module->getSettingsModel();
+                if ($items || $settings) {
                     $menu[] = [
-                        'name' => $class::getVerboseName(),
+                        'name' => $module->getVerboseName(),
                         'settings' => $settings,
                         'key' => $name,
-                        'class' => $class,
-                        'items' => $moduleMenu
+                        'class' => get_class($module),
+                        'items' => $items
                     ];
                 }
             }
+
         }
 
         return $menu;

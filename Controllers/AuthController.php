@@ -19,6 +19,8 @@ use Phact\Di\ContainerInterface;
 use Phact\Interfaces\AuthInterface;
 use Phact\Main\Phact;
 use Phact\Request\HttpRequestInterface;
+use Phact\Template\RendererInterface;
+use Phact\Template\TemplateManager;
 
 class AuthController extends Controller
 {
@@ -27,11 +29,11 @@ class AuthController extends Controller
      */
     protected $_auth;
 
-    public function __construct(HttpRequestInterface $request, AuthInterface $auth)
+    public function __construct(HttpRequestInterface $request, AuthInterface $auth, RendererInterface $renderer)
     {
         $this->_auth = $auth;
 
-        parent::__construct($request);
+        parent::__construct($request, $renderer);
     }
 
     public function login()

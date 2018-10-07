@@ -21,6 +21,7 @@ use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Interfaces\AuthInterface;
+use Phact\Module\Module;
 use Phact\Orm\Expression;
 use Phact\Orm\Fields\Field;
 use Phact\Orm\Fields\PositionField;
@@ -35,7 +36,7 @@ use Phact\Pagination\Pagination;
 use Phact\Request\HttpRequestInterface;
 use Phact\Router\RouterInterface;
 use Phact\Template\Renderer;
-use Phact\Translate\Translator;
+use Phact\Translate\Translate;
 
 abstract class Admin
 {
@@ -118,27 +119,43 @@ abstract class Admin
     protected $_request;
 
     /**
-     * @var Translator|null
+     * @var Translate|null
      */
-    protected $_translator;
+    protected $_translate;
 
     /**
      * @var AuthInterface
      */
     protected $_auth;
 
+    /**
+     * Current admin name in module
+     * @var string
+     */
+    protected $_name;
+
+    /**
+     * Module name
+     * @var string
+     */
+    protected $_moduleName;
+
     public function __construct(
+        string $name,
+        string $moduleName,
         HttpRequestInterface $request,
         RouterInterface $router,
         AuthInterface $auth,
         FlashInterface $flash = null,
-        Translator $translator = null
+        Translate $translate = null
     )
     {
+        $this->_name = $name;
+        $this->_moduleName = $moduleName;
         $this->_router = $router;
         $this->_flash = $flash;
         $this->_request = $request;
-        $this->_translator = $translator;
+        $this->_translate = $translate;
         $this->_auth = $auth;
     }
 
@@ -186,7 +203,7 @@ abstract class Admin
      * Set current object
      *
      * @param $instance
-     * @return $this
+     * @return self
      */
     public function setInstance($instance)
     {
@@ -379,7 +396,7 @@ abstract class Admin
      */
     public function getUserColumns()
     {
-        $config = AdminConfig::fetch(static::getModuleName(), static::classNameShort(), $this->_auth->getUser()->getLogin());
+        $config = AdminConfig::fetch($this->_moduleName, $this->_name, $this->_auth->getUser()->getLogin());
         return $config->getColumnsList();
     }
 
@@ -523,9 +540,8 @@ abstract class Admin
             $parent = $this->getTreeParent();
             if ($parent) {
                 return $parent->objects()->children();
-            } else {
-                return $model->objects()->roots();
             }
+            return $model->objects()->roots();
         }
         if ($this::$ownerAttribute && $this->ownerPk) {
             return $model->objects()->filter([
@@ -643,29 +659,17 @@ abstract class Admin
         return $qs;
     }
 
-    /**
-     * @return array
-     */
-    public function getCommonData()
-    {
-        return [
-            'admin' => $this,
-            'adminClass' => static::classNameShort(),
-            'moduleClass' => static::getModuleName()
-        ];
-    }
-
     public function getId()
     {
-        return implode('-', [static::getModuleName(), static::classNameShort()]);
+        return implode('-', [$this->_moduleName, $this->_name]);
     }
 
     public function getAllUrl($parentId = null)
     {
         $route = 'admin:all';
         $params = [
-            'module' => static::getModuleName(),
-            'admin' => static::classNameShort()
+            'module' => $this->_moduleName,
+            'admin' => $this->_name
         ];
         if ($parentId) {
             $route = 'admin:all_children';
@@ -678,8 +682,8 @@ abstract class Admin
     {
         $route = 'admin:create';
         $params = [
-            'module' => static::getModuleName(),
-            'admin' => static::classNameShort()
+            'module' => $this->_moduleName,
+            'admin' => $this->_name
         ];
         if ($parentId || $this->parentId) {
             $route = 'admin:create_child';
@@ -694,8 +698,8 @@ abstract class Admin
     public function getUpdateUrl($pk = null)
     {
         return $this->_router->url('admin:update', [
-            'module' => static::getModuleName(),
-            'admin' => static::classNameShort(),
+            'module' => $this->_moduleName,
+            'admin' => $this->_name,
             'pk' => $pk
         ]);
     }
@@ -703,8 +707,8 @@ abstract class Admin
     public function getInfoUrl($pk = null)
     {
         return $this->_router->url('admin:info', [
-            'module' => static::getModuleName(),
-            'admin' => static::classNameShort(),
+            'module' => $this->_moduleName,
+            'admin' => $this->_name,
             'pk' => $pk
         ]);
     }
@@ -712,8 +716,8 @@ abstract class Admin
     public function getRemoveUrl($pk = null)
     {
         return $this->_router->url('admin:remove', [
-            'module' => static::getModuleName(),
-            'admin' => static::classNameShort(),
+            'module' => $this->_moduleName,
+            'admin' => $this->_name,
             'pk' => $pk
         ]);
     }
@@ -721,8 +725,8 @@ abstract class Admin
     public function getGroupActionUrl()
     {
         return $this->_router->url('admin:group_action', [
-            'module' => static::getModuleName(),
-            'admin' => static::classNameShort()
+            'module' => $this->_moduleName,
+            'admin' => $this->_name,
         ]);
     }
 
@@ -731,8 +735,8 @@ abstract class Admin
         if (($sort = $this->getSortColumn()) || $this->getIsTree()) {
             $route = 'admin:sort';
             $params = [
-                'module' => static::getModuleName(),
-                'admin' => static::classNameShort()
+                'module' => $this->_moduleName,
+                'admin' => $this->_name
             ];
             if ($parentId || $this->parentId) {
                 $route = 'admin:sort_children';
@@ -746,8 +750,8 @@ abstract class Admin
     public function getColumnsUrl()
     {
         return $this->_router->url('admin:columns', [
-            'module' => static::getModuleName(),
-            'admin' => static::classNameShort()
+            'module' => $this->_moduleName,
+            'admin' => $this->_name
         ]);
     }
 
@@ -878,7 +882,11 @@ abstract class Admin
 
     public function render($template, $data = [])
     {
-        echo $this->renderTemplate($template, array_merge($data, $this->getCommonData()));
+        echo $this->renderTemplate($template, array_merge($data, [
+            'admin' => $this,
+            'adminName' => $this->_name,
+            'moduleName' => $this->_moduleName
+        ]));
     }
 
     public function jsonResponse($data = [])
@@ -951,18 +959,19 @@ abstract class Admin
                         'status' => 'success'
                     ]);
                     exit();
+                }
+
+                if ($this->_flash) {
+                    $this->_flash->success($this->t('Admin.main', 'Changes saved'));
+                }
+
+                $next = isset($_POST['save']) ? $_POST['save']: 'save';
+                if ($next === 'save') {
+                    $request->redirect($this->getAllUrl($this->parentId));
+                } elseif ($next === 'save-stay') {
+                    $request->redirect($this->getUpdateUrl($model->pk));
                 } else {
-                    if ($this->_flash) {
-                        $this->_flash->success($this->t('Admin.main', 'Changes saved'));
-                    }
-                    $next = isset($_POST['save']) ? $_POST['save']: 'save';
-                    if ($next == 'save') {
-                        $request->redirect($this->getAllUrl($this->parentId));
-                    } elseif ($next == 'save-stay') {
-                        $request->redirect($this->getUpdateUrl($model->pk));
-                    } else {
-                        $request->redirect($this->getCreateUrl($this->parentId));
-                    }
+                    $request->redirect($this->getCreateUrl($this->parentId));
                 }
             } else {
                 if (!$request->getIsAjax()) {
@@ -1020,9 +1029,8 @@ abstract class Admin
         if ($sort = $this->getSortColumn()) {
             $order = $qs->getOrder();
             return $order == [$sort];
-        } else {
-            return false;
         }
+        return false;
     }
 
     public function sort($pkList, $to, $prev, $next)
@@ -1071,7 +1079,7 @@ abstract class Admin
 
     public function setColumns($columns)
     {
-        $config = AdminConfig::fetch(static::getModuleName(), static::classNameShort(), $this->_auth->getUser()->getLogin());
+        $config = AdminConfig::fetch($this->_moduleName, $this->_name, $this->_auth->getUser()->getLogin());
         $config->setColumnsList($columns);
         $this->jsonResponse([
             'success' => true
@@ -1190,23 +1198,33 @@ abstract class Admin
     /**
      * @return string
      */
-    public static function getName()
+    public function getName()
     {
-        return static::classNameShort();
+        return $this->_name;
     }
 
     /**
      * @return string
      */
-    public static function getItemName()
+    public function getItemName()
     {
-        return static::classNameShort();
+        return $this->_name;
     }
 
-    protected function t($domain, $key)
+    /**
+     * Translate
+     *
+     * @param $domain
+     * @param string $key
+     * @param null $number
+     * @param array $parameters
+     * @param null $locale
+     * @return string
+     */
+    public function t($domain, $key = "", $number = null, $parameters = [], $locale = null)
     {
-        if ($this->_translator) {
-            return $this->_translator->t($domain, $key);
+        if ($this->_translate) {
+            return $this->_translate->t($domain, $key, $number, $parameters, $locale);
         }
         return $key;
     }
