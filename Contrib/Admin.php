@@ -1118,7 +1118,7 @@ abstract class Admin
         $admins = [];
         foreach ($config as $relation => $class) {
             /** @var Admin $admin */
-            $admin = new $class;
+            $admin = new $class($class::classNameShort(), $this->_moduleName, $this->_request, $this->_router, $this->_auth, $this->_flash, $this->_translate);
             if ($instance && $instance->pk) {
                 $admin->ownerPk = $instance->pk;
             }
