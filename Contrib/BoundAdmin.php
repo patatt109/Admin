@@ -25,6 +25,13 @@ abstract class BoundAdmin extends Admin
         }
         return $instance;
     }
+    
+    public function getForm()
+    {
+        $form = parent::getForm();
+        $form->exclude[] = static::$ownerAttribute;
+        return $form;
+    }
 
     public function save($form, $ownerInstance)
     {
