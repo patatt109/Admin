@@ -4,7 +4,7 @@
     {var $value = $admin->getItemProperty($item, $column)}
 {/if}
 
-{if $value is \Phact\Orm\Fields\FileField}
+{if $value is '\Phact\Orm\Fields\FileField'}
     {set $url = $value->getUrl()}
     {if $url}
         <a href="{$url}" target="_blank">
