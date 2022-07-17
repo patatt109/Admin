@@ -1228,4 +1228,9 @@ abstract class Admin
         }
         return $key;
     }
+
+    public function getViewUrl(Model $model): ?string
+    {
+        return null;
+    }
 }

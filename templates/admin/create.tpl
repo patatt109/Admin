@@ -28,8 +28,8 @@
                 </div>
 
                 <div class="links">
-                    {if $model->pk && $.php.method_exists($model, 'getAbsoluteUrl')}
-                        <a href="{$model->getAbsoluteUrl()}" target="_blank">
+                    {if $model->pk && $admin->getViewUrl($model)}
+                        <a href="{$admin->getViewUrl($model)}" target="_blank">
                             <i class="icon-watch_on_site"></i>
                             <span class="text">
                                 {t "Admin.main" "Show on site"}

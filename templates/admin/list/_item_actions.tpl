@@ -12,8 +12,8 @@
     </a>
 {/if}
 
-{if ("view" in $actions) && $.php.method_exists($item, 'getAbsoluteUrl')}
-    <a href="{$item->getAbsoluteUrl()}">
+{if ("view" in $actions) && $admin->getViewUrl($item)}
+    <a href="{$admin->getViewUrl($item)}">
         <i class="icon-search_mark"></i>
     </a>
 {/if}
