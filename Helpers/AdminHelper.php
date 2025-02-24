@@ -15,6 +15,7 @@ namespace Modules\Admin\Helpers;
 use Modules\Admin\Contrib\AdminMenuInterface;
 use Phact\Application\ModulesInterface;
 use Phact\Di\ComponentFetcher;
+use Phact\Interfaces\AuthInterface;
 
 class AdminHelper
 {
@@ -25,6 +26,8 @@ class AdminHelper
         $menu = [];
         /** @var ModulesInterface $modules */
         $modules = self::fetchComponent(ModulesInterface::class);
+        $auth = self::fetchComponent(AuthInterface::class);
+        $user = $auth->getUser();
 
         if ($modules) {
             foreach ($modules->getModules() as $name => $module) {
@@ -33,6 +36,9 @@ class AdminHelper
                     $items = $module->getPublicAdmins();
                 }
                 $settings = $module->getSettingsModel();
+                if ($user->getIsStaff() && empty($module->staffHasRule)) {
+                    continue;
+                }
                 if ($items || $settings) {
                     $menu[] = [
                         'name' => $module->getVerboseName(),

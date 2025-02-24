@@ -25,7 +25,7 @@ class LoginForm extends Form
     /** @var AuthInterface */
     protected $_auth;
 
-    public function __construct(array $config = [], AuthInterface $auth)
+    public function __construct(AuthInterface $auth, array $config = [])
     {
         parent::__construct($config);
         $this->_auth = $auth;

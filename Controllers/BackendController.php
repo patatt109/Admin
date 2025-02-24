@@ -37,7 +37,7 @@ class BackendController extends Controller
         $user = $this->_auth->getUser();
         if (!$user || $user->getIsGuest()) {
             $this->request->redirect('admin:login');
-        } elseif (!$user->getIsSuperuser()) {
+        } elseif (!($user->getIsSuperuser() || $user->getIsStaff())) {
             $this->error(404);
         }
     }

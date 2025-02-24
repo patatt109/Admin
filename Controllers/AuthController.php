@@ -42,7 +42,7 @@ class AuthController extends Controller
         if (!$user->getIsGuest()) {
             $this->redirect('admin:index');
         }
-        $form = new LoginForm([], $this->_auth);
+        $form = new LoginForm($this->_auth, []);
         if ($this->request->getIsPost() && $form->fill($_POST)) {
             if ($form->valid) {
                 $form->login();
