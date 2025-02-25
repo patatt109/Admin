@@ -45,7 +45,7 @@ class AdminConfig extends Model
     public function getColumnsList()
     {
         $columns = $this->columns;
-        return explode(',', $columns);
+        return explode(',', $columns ?? '');
     }
 
     public function setColumnsList($columns)
